@@ -1,0 +1,22 @@
+{
+	"compilerOptions": {
+		"module": "ES2015",
+		"esModuleInterop": true,
+		"target": "ES2017",
+		"moduleResolution": "Node",
+		"importsNotUsedAsValues": "remove",
+		"strict": true,
+		"skipLibCheck": true,
+		"forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+		"outDir": "dist",
+		"baseUrl": ".",
+	}
+}
