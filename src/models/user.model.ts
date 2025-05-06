@@ -5,12 +5,17 @@ import { Role } from "../Types/ENUM";
 const UserSchema = new Schema<IUser>(
   {
     fullName: String,
-    email: { type: String, unique: true },
+    email: { type: String, required:true ,unique: true },
     phoneNumber: String,
-    passwordHash: String,
+    password: { type: String, required:true },
     role: { type: String, enum: Object.values(Role) },
     enrollmentYear: Number,
-    department: String
+    department: String,
+
+    resetPasswordToken: String,
+    resetPasswordExpireAt:Date,
+    verificationToken:String,
+    verificationTokenExpireAt:Date,
   },
   { timestamps: true }
 );
