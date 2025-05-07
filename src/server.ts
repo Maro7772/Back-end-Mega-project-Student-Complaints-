@@ -2,8 +2,9 @@ import "dotenv/config"; // Load environment variables from .env file
 import express, { Request, Response } from "express";
 import { User } from "./models/user.model";
 import Complaint from "./models/complaint.model";
-import env from "./util/validateEnv";
-import { connectDB } from "./config/db";
+import env from "./util/validateEnv";;
+import { connectDB  } from "./config/db";
+import router from "./routes/auth.route";
 
 const port = env.PORT;
 const app = express();

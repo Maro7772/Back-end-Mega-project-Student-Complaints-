@@ -6,12 +6,18 @@ export interface IUser extends Document {
   fullName: string;
   email: string;
   phoneNumber: string;
-  passwordHash: string;
+  password: string;
   role: Role;
   enrollmentYear?: number;
   department?: string;
   createdAt: Date;
   updatedAt: Date;
+
+  
+  resetPasswordToken?: String,
+  resetPasswordExpireAt?:Date,
+  verificationToken?:String,
+  verificationTokenExpireAt?:Date,
 }
 
 export interface IComplaint extends Document {
