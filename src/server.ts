@@ -87,6 +87,7 @@ app.put("/complaints/:id", async (req: Request, res: Response) => {
   }
 });
 
+app.use("/api/auth", router); // Use the auth routes
 app.listen(port, () => {
   connectDB();
   console.log(`Server is running on http://localhost:${port}`);
