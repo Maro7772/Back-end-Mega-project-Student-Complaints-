@@ -5,8 +5,9 @@ import { Category, Status } from "../Types/ENUM";
 const ComplaintSchema = new Schema<IComplaint>(
   {
     student: { type: Schema.Types.ObjectId, ref: "User" },
-    category: { type: String, enum: Object.values(Category) },
-    description: String,
+    name: { type: String, required: true },
+    category: { type: String, enum: Object.values(Category), required: true },
+    description: { type: String, required: true },
     status: {
       type: String,
       enum: Object.values(Status),
@@ -19,8 +20,9 @@ const ComplaintSchema = new Schema<IComplaint>(
 );
 
 // Models
-
-export const Complaint = mongoose.model<IComplaint>(
+const Complaint = mongoose.model<IComplaint>(
   "Complaint",
   ComplaintSchema
 );
+
+export default Complaint; 
