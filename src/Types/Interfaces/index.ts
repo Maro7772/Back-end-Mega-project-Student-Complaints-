@@ -22,6 +22,7 @@ export interface IUser extends Document {
 
 export interface IComplaint extends Document {
   student: mongoose.Types.ObjectId;
+  name: string;
   category: Category;
   description: string;
   status: Status;

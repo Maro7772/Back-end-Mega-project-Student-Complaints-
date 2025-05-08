@@ -1,16 +1,16 @@
 export enum Role {
-  STUDENT = 'student',
-  ADMIN = 'admin',
-  STAFF = 'staff',
+  STUDENT = 'Student',
+  ADMIN = 'Admin',
+  STAFF = 'Staff',
 }
 
 export enum Category {
-  ACADEMIC = 'academic',
-  NON_ACADEMIC = 'non-academic',
+  ACADEMIC = 'Academic',
+  NON_ACADEMIC = 'Non-Academic',
 }
 
 export enum Status {
   PENDING = 'Pending',
   RESOLVED = 'Resolved',
-  ESCALATED = 'Escalated',
+  REJECTED = 'Rejected',
 }
