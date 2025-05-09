@@ -36,6 +36,7 @@
   },
   "devDependencies": {
     "@types/cors": "^2.8.18",
+    "@types/cookie-parser": "^1.4.8",
     "@types/express": "^5.0.1",
     "@types/jsonwebtoken": "^9.0.9",
     "eslint": "^9.26.0",
