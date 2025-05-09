@@ -11,18 +11,23 @@ const createUserSchema = object({
   role: string().oneOf(["student", "admin"], "Role must be either 'student' or 'admin'").required("Role is required"),
 });
 
+const loginUserSchema = object({
+  email: string().email("Invalid email").required("Email is required"),
+  password: string().required("Password is required"),
+});
+
 const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret";
 const REFRESH_SECRET = process.env.REFRESH_SECRET || "your_refresh_secret";
 
-const generateAccessToken = (user: any) => {
-   jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: "5m" });
-  return
-};
+const generateAccessToken = (user: any) => 
+   jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: "20m" });
 
-const generateRefreshToken = (user: any) => {
-   jwt.sign({ id: user._id, role: user.role }, REFRESH_SECRET, { expiresIn: "7d" });
-   return
-};
+
+const generateRefreshToken = (user: any) => 
+  jwt.sign({ id: user._id, role: user.role }, REFRESH_SECRET, { expiresIn: "7d" });
+  
+
+// ******************[ signup logic ]*****************************
 
 export const signup = async (req: Request, res: Response) => {
   try {
@@ -31,8 +36,8 @@ export const signup = async (req: Request, res: Response) => {
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-       res.status(409).json({ message: "User already exists. Please log in instead." });
-       return 
+      res.status(409).json({ message: "User already exists. Please log in instead." });
+      return
     }
 
     const passwordHashed = await bcryptjs.hash(password, 12);
@@ -41,25 +46,30 @@ export const signup = async (req: Request, res: Response) => {
     res.status(201).json({ message: "User created successfully", userId: newUser._id });
   } catch (error: any) {
     if (error.name === 'ValidationError') {
-       res.status(400).json({ message: "Validation failed", errors: error.errors });
-       return
+      res.status(400).json({ message: "Validation failed", errors: error.errors });
+      return
     }
     res.status(500).json({ message: "Error creating user" });
   }
 };
 
+
+// ******************[ login logic ]*****************************
+
 export const login = async (req: Request, res: Response) => {
+
   try {
-    const { email, password } = req.body;
+    const userlogin = await loginUserSchema.validate(req.body, { abortEarly: false });
+    const {  email, password } = userlogin;
     const existingUser = await User.findOne({ email });
     if (!existingUser) {
-       res.status(404).json({ message: "User not found" });
+      res.status(404).json({ message: "User not found" });
       return
     }
 
     const isPasswordCorrect = await bcryptjs.compare(password, existingUser.password);
     if (!isPasswordCorrect) {
-       res.status(401).json({ message: "Invalid credentials" });
+      res.status(401).json({ message: "Invalid credentials" });
       return
     }
 
@@ -88,7 +98,11 @@ export const login = async (req: Request, res: Response) => {
   }
 };
 
+
+// ******************[ logout logic ]*****************************
+
 export const logout = (req: Request, res: Response) => {
+ 
   res.clearCookie("refreshToken", {
     httpOnly: true,
     sameSite: "lax",
@@ -99,7 +113,7 @@ export const logout = (req: Request, res: Response) => {
 export const refreshToken = async (req: Request, res: Response) => {
   const token = req.cookies.refreshToken;
   if (!token) {
-     res.status(401).json({ message: "Refresh token missing. Please log in again." });
+    res.status(401).json({ message: "Refresh token missing. Please log in again." });
   }
 
   try {

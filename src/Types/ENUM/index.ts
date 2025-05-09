@@ -1,7 +1,7 @@
 export enum Role {
-  STUDENT = 'Student',
-  ADMIN = 'Admin',
-  STAFF = 'Staff',
+  STUDENT = 'student',
+  ADMIN = 'admin',
+  STAFF = 'staff',
 }
 
 export enum Category {
