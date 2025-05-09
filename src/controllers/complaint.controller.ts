@@ -4,7 +4,7 @@ import { User } from "../models/user.model";
 import * as Yup from "yup";
 
 const createComplaintSchema = Yup.object({
-  studentId: Yup.string().required("Student ID is required"),
+  name: Yup.string().required("Student Name is required"),
   category: Yup.string()
     .required("Category is required")
     .oneOf(
@@ -20,10 +20,10 @@ export const createComplaint = async (req: Request, res: Response) => {
     const complaintBody = await createComplaintSchema.validate(req.body, {
       abortEarly: false
     });
-    const { studentId, category, description } = complaintBody;
+    const { name, category, description } = complaintBody;
 
-    const student = await User.findById(studentId);
-    if (!studentId || !category || !description) {
+    const student = await User.findOne({ fullName: name });
+    if (!name || !category || !description) {
       res.status(400).json({ message: "All fields are required" });
       return;
     }
@@ -86,11 +86,11 @@ export const deleteComplaint = async (req: Request, res: Response) => {
 export const updateComplaint = async (req: Request, res: Response) => {
   try {
     const complaintId = req.params.id;
-    const { category, description, status } = req.body;
+    const { category, description, status, name } = req.body;
 
     const updatedComplaint = await Complaint.findByIdAndUpdate(
       complaintId,
-      { category, description, status },
+      { category, description, status, name },
       { new: true }
     );
 
