@@ -10,7 +10,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret";
 const REFRESH_SECRET = process.env.REFRESH_SECRET || "your_refresh_secret";
 
 
-  
+
 
 // ******************[ signup logic ]*****************************
 
@@ -45,7 +45,7 @@ export const login = async (req: Request, res: Response) => {
 
   try {
     const userlogin = await loginUserSchema.validate(req.body, { abortEarly: false });
-    const {  email, password } = userlogin;
+    const { email, password } = userlogin;
     const existingUser = await User.findOne({ email });
     if (!existingUser) {
       res.status(404).json({ message: "User not found" });
@@ -87,7 +87,7 @@ export const login = async (req: Request, res: Response) => {
 // ******************[ logout logic ]*****************************
 
 export const logout = (req: Request, res: Response) => {
- 
+
   res.clearCookie("refreshToken", {
     httpOnly: true,
     sameSite: "lax",
@@ -106,8 +106,8 @@ export const refreshToken = async (req: Request, res: Response) => {
 
     const existingUser = await User.findById(decoded.id);
     if (!existingUser) {
-       res.status(404).json({ message: "User not found" });
-       return
+      res.status(404).json({ message: "User not found" });
+      return
     }
 
     const newAccessToken = generateAccessToken(existingUser);
@@ -131,64 +131,61 @@ export const refreshToken = async (req: Request, res: Response) => {
 
 export const forgotPassword = async (req: Request, res: Response) => {
   try {
-    const userforgetpassword = await forgotPasswordSchema.validate(req.body , { abortEarly: false });
-     const {  email } = userforgetpassword;
-    
+    const userforgetpassword = await forgotPasswordSchema.validate(req.body, { abortEarly: false });
+    const { email } = userforgetpassword;
+
     const user = await User.findOne({ email });
     if (!user) {
-      // For security, don't reveal if user doesn't exist
-       res.status(200).json({ message: "If this email exists, a reset link has been sent" });
-       return
+      res.status(200).json({ message: "If this email exists, a reset code has been sent" });
+      return;
     }
 
     // Generate reset token
     const resetToken = generateResetToken(user.id.toString());
-    
-    // In a real app, you would send this link via email
-    const resetLink = `http://yourfrontend.com/reset-password?token=${resetToken}`;
-    
-    res.status(200).json({ 
-      message: " this email exists, a reset link has been sent",
-      // In production, don't send the link in the response
-      resetLink: process.env.NODE_ENV === 'development' ? resetLink : undefined 
+
+    // Save reset token and its expiration time in the user's document
+    user.resetPassword = resetToken;
+    user.resetPasswordExpireAt = new Date(Date.now() + 3600000);  // Token expires in 1 hour
+    await user.save();
+
+    res.status(200).json({
+      message: "If this email exists, a reset code has been sent",
+      resetToken,
     });
-    
+
   } catch (error) {
     res.status(500).json({ message: "Error processing forgot password request" });
   }
 };
 
 
+
 // ******************[ RestPassword logic ]*****************************
 
 export const resetPassword = async (req: Request, res: Response) => {
   try {
-    const { token, password } = await resetPasswordSchema.validate(req.body, { abortEarly: false });
-    
-    // Verify token
-    const decoded = verifyResetToken(token);
-    
-    // Find user
-    const user = await User.findById(decoded.id);
-    if (!user) {
-       res.status(404).json({ message: "User not found" });
-       return
+    const userRestPassword = await resetPasswordSchema.validate(req.body, { abortEarly: false });
+    const { email, code, password } = userRestPassword;
+
+    const user = await User.findOne({ email });
+    if (!user || user.resetPassword !== code || user.resetPasswordExpireAt?.getTime() < Date.now()) {
+      res.status(400).json({ message: "Invalid or expired verification code" });
+      return;
     }
-    
-    // Hash new password
+
+    // Hash the new password
     const hashedPassword = await bcryptjs.hash(password, 12);
-    
-    // Update password
+
+    // Update the user's password
     user.password = hashedPassword;
+    // Clear the reset after password is reset
+    user.resetPassword = undefined;
+
     await user.save();
-    
+
     res.status(200).json({ message: "Password reset successfully" });
-    
+
   } catch (error) {
-    if (error instanceof jwt.JsonWebTokenError) {
-       res.status(400).json({ message: "Invalid or expired token" });
-      return
-    }
     res.status(500).json({ message: "Error resetting password" });
   }
-}
+};

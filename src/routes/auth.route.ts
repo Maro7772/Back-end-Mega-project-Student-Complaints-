@@ -7,13 +7,15 @@ import { authMiddleware } from "../middlwares/auth.middlware";
 const router = express.Router();
 
 router.post("/signup",   signup);
-router.post("/login",authMiddleware, login);
+router.post("/login", login);
 
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password" , resetPassword);
 
-router.get("/logout", logout);
+router.get("/logout",authMiddleware, logout);
 
 router.post("/refresh-token", refreshToken);
+
+// router.get("/profile", authMiddleware, getUserProfile);
 
 export default router;

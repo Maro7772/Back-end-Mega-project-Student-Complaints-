@@ -18,6 +18,7 @@ export const forgotPasswordSchema = object({
 });
 
 export const resetPasswordSchema = object({
-  token: string().required("Token is required"),
+  email: string().email("Invalid email").required("Email is required"),
+  code: string().length(6, "Code must be 6 digits").required("Verification code is required"),
   password: string().min(6, "Password must be at least 6 characters").required("Password is required"),
 });

@@ -14,8 +14,8 @@ export interface IUser extends Document {
   updatedAt: Date;
 
   
-  resetPasswordToken?: String,
-  resetPasswordExpireAt?:Date,
+  resetPassword?: String,
+  resetPasswordExpireAt:Date,
   verificationToken?:String,
   verificationTokenExpireAt?:Date,
 }

@@ -12,7 +12,7 @@ const UserSchema = new Schema<IUser>(
     enrollmentYear: Number,
     department: String,
 
-    resetPasswordToken: String,
+    resetPassword: String,
     resetPasswordExpireAt:Date,
     verificationToken:String,
     verificationTokenExpireAt:Date,
