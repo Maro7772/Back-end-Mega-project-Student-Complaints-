@@ -1,30 +1,15 @@
 import type { Request, Response } from "express";
 import { User } from "../models/user.model";
-import { object, string } from "yup";
+import { createUserSchema, forgotPasswordSchema, loginUserSchema, resetPasswordSchema } from "../models/auth.model";
 import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { generateAccessToken, generateRefreshToken, generateResetToken, verifyResetToken } from "../util/generateToken";
 
-const createUserSchema = object({
-  fullName: string().required("Name is required"),
-  email: string().email("Invalid email").required("Email is required"),
-  password: string().min(6, "Password must be at least 6 characters").required("Password is required"),
-  role: string().oneOf(["student", "admin"], "Role must be either 'student' or 'admin'").required("Role is required"),
-});
-
-const loginUserSchema = object({
-  email: string().email("Invalid email").required("Email is required"),
-  password: string().required("Password is required"),
-});
-
+// in the env. file the is no space and we put it to make the value secure but here its just for using it in the code 
 const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret";
 const REFRESH_SECRET = process.env.REFRESH_SECRET || "your_refresh_secret";
 
-const generateAccessToken = (user: any) => 
-   jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: "20m" });
 
-
-const generateRefreshToken = (user: any) => 
-  jwt.sign({ id: user._id, role: user.role }, REFRESH_SECRET, { expiresIn: "7d" });
   
 
 // ******************[ signup logic ]*****************************
@@ -121,7 +106,8 @@ export const refreshToken = async (req: Request, res: Response) => {
 
     const existingUser = await User.findById(decoded.id);
     if (!existingUser) {
-      return res.status(404).json({ message: "User not found" });
+       res.status(404).json({ message: "User not found" });
+       return
     }
 
     const newAccessToken = generateAccessToken(existingUser);
@@ -138,3 +124,71 @@ export const refreshToken = async (req: Request, res: Response) => {
     res.status(401).json({ message: "Refresh token expired. Please log in again." });
   }
 };
+
+
+
+// ******************[ FrogetPassword logic ]*****************************
+
+export const forgotPassword = async (req: Request, res: Response) => {
+  try {
+    const userforgetpassword = await forgotPasswordSchema.validate(req.body , { abortEarly: false });
+     const {  email } = userforgetpassword;
+    
+    const user = await User.findOne({ email });
+    if (!user) {
+      // For security, don't reveal if user doesn't exist
+       res.status(200).json({ message: "If this email exists, a reset link has been sent" });
+       return
+    }
+
+    // Generate reset token
+    const resetToken = generateResetToken(user.id.toString());
+    
+    // In a real app, you would send this link via email
+    const resetLink = `http://yourfrontend.com/reset-password?token=${resetToken}`;
+    
+    res.status(200).json({ 
+      message: "If this email exists, a reset link has been sent",
+      // In production, don't send the link in the response
+      resetLink: process.env.NODE_ENV === 'development' ? resetLink : undefined 
+    });
+    
+  } catch (error) {
+    res.status(500).json({ message: "Error processing forgot password request" });
+  }
+};
+
+
+// ******************[ RestPassword logic ]*****************************
+
+export const resetPassword = async (req: Request, res: Response) => {
+  try {
+    const { token, password } = await resetPasswordSchema.validate(req.body, { abortEarly: false });
+    
+    // Verify token
+    const decoded = verifyResetToken(token);
+    
+    // Find user
+    const user = await User.findById(decoded.id);
+    if (!user) {
+       res.status(404).json({ message: "User not found" });
+       return
+    }
+    
+    // Hash new password
+    const hashedPassword = await bcryptjs.hash(password, 12);
+    
+    // Update password
+    user.password = hashedPassword;
+    await user.save();
+    
+    res.status(200).json({ message: "Password reset successfully" });
+    
+  } catch (error) {
+    if (error instanceof jwt.JsonWebTokenError) {
+       res.status(400).json({ message: "Invalid or expired token" });
+      return
+    }
+    res.status(500).json({ message: "Error resetting password" });
+  }
+}
