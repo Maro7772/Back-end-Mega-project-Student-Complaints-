@@ -148,7 +148,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
     const resetLink = `http://yourfrontend.com/reset-password?token=${resetToken}`;
     
     res.status(200).json({ 
-      message: "If this email exists, a reset link has been sent",
+      message: " this email exists, a reset link has been sent",
       // In production, don't send the link in the response
       resetLink: process.env.NODE_ENV === 'development' ? resetLink : undefined 
     });

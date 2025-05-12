@@ -10,7 +10,7 @@ router.post("/signup",   signup);
 router.post("/login",authMiddleware, login);
 
 router.post("/forgot-password", forgotPassword);
-router.post("/reset-password", authMiddleware , resetPassword);
+router.post("/reset-password" , resetPassword);
 
 router.get("/logout", logout);
 
