@@ -3,7 +3,8 @@ import { User } from "../models/user.model";
 import { createUserSchema, forgotPasswordSchema, loginUserSchema, resetPasswordSchema } from "../models/auth.model";
 import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { generateAccessToken, generateRefreshToken, generateResetToken, verifyResetToken } from "../util/generateToken";
+import nodemailer from 'nodemailer';
+import { generateAccessToken, generateRefreshToken, generateResetToken } from "../util/generateToken";
 
 // in the env. file the is no space and we put it to make the value secure but here its just for using it in the code 
 const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret";
@@ -136,27 +137,89 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
     const user = await User.findOne({ email });
     if (!user) {
-      res.status(200).json({ message: "If this email exists, a reset code has been sent" });
+      // لا تكشف ما إذا كان البريد الإلكتروني موجودًا أم لا
+      await new Promise(resolve => setTimeout(resolve, 500)); // منع Timing Attacks
+      res.status(200).json({
+        message: "If this email exists, a reset code has been sent"
+      });
       return;
     }
 
-    // Generate reset token
-    const resetToken = generateResetToken(user.id.toString());
+    // منع إساءة الاستخدام (Rate Limiting)
+    if (user.resetPasswordExpireAt && user.resetPasswordExpireAt > new Date()) {
+      const remainingTime = Math.ceil(
+        (user.resetPasswordExpireAt.getTime() - Date.now()) / 60000
+      );
+      res.status(429).json({
+        message: `Please wait ${remainingTime} minutes before requesting a new code`
+      });
+    }
 
-    // Save reset token and its expiration time in the user's document
-    user.resetPassword = resetToken;
-    user.resetPasswordExpireAt = new Date(Date.now() + 3600000);  // Token expires in 1 hour
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expirationTime = new Date(Date.now() + 10 * 60000); // 10 دقائق
+
+    user.resetCode = verificationCode;
+    user.resetPassword = verificationCode;
+    user.resetPasswordExpireAt = expirationTime;
     await user.save();
+
+    try {
+      await sendVerificationEmail(email, verificationCode);
+    } catch (emailError) {
+      console.error('Failed to send verification email:', emailError);
+      // يمكنك التراجع عن حفظ الكود هنا إذا فشل إرسال البريد
+    }
 
     res.status(200).json({
       message: "If this email exists, a reset code has been sent",
-      resetToken,
     });
 
   } catch (error) {
+    console.error('Forgot password error:', error);
     res.status(500).json({ message: "Error processing forgot password request" });
   }
 };
+
+// ******************[ sendVerificationEmail logic ]*****************************
+const sendVerificationEmail = async (email: string, code: string) => {
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.EMAIL_USER, // Always use environment variables
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  const mailOptions = {
+    from: `Your App <${process.env.EMAIL_USER}>`,
+    to: email,
+    subject: 'Password Reset Verification Code',
+    html: `<h3>Your verification code is: <b>${code}</b></h3>
+           <p>This code will expire in 10 minutes.</p>`,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error('Email sending error:', error);
+    throw error; // Re-throw to handle in the calling function
+  }
+};
+
+// ******************[ verifyCode logic ]*****************************
+
+export const verifyCode = async (req: Request, res: Response) => {
+  const { email, code } = req.body;
+
+  const user = await User.findOne({ email });
+  if (!user || user.resetCode !== code || user.resetPasswordExpireAt! < new Date()) {
+    res.status(400).json({ message: "Invalid or expired code" });
+    return
+  }
+
+  res.status(200).json({ message: "Code is valid" });
+};
+
 
 
 

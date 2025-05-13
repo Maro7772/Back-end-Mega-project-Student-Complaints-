@@ -1,5 +1,5 @@
 import express from "express"
-import { signup, login, logout ,forgotPassword, resetPassword, refreshToken } from "../controllers/auth.controller";
+import { signup, login, logout ,forgotPassword, resetPassword, refreshToken, verifyCode } from "../controllers/auth.controller";
 import { authMiddleware } from "../middlwares/auth.middlware";
 // import { adminGuardMiddleware } from "../middlwares/admin-guard-middleware";
 
@@ -11,6 +11,7 @@ router.post("/login", login);
 
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password" , resetPassword);
+router.post("/codeVerification" , verifyCode);
 
 router.get("/logout",authMiddleware, logout);
 

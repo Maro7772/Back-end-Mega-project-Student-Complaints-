@@ -9,8 +9,8 @@ import ComplaintsRouter from "./routes/complaint.route";
 
 const port = env.PORT;
 const app = express();
-
-app.use(cors({ origin: "http://localhost:5173" }));
+// this make the frontend read from the server  and the credintails is to add the cookie .
+app.use(cors({ origin: "http://localhost:5173" , credentials: true}));
 app.use(express.json()); // Middleware to parse JSON request bodies
 app.use(cookieParser());
 

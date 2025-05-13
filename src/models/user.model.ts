@@ -13,6 +13,7 @@ const UserSchema = new Schema<IUser>(
     department: String,
 
     resetPassword: String,
+    resetCode: String,
     resetPasswordExpireAt:Date,
     verificationToken:String,
     verificationTokenExpireAt:Date,
