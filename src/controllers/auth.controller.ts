@@ -14,7 +14,6 @@ const REFRESH_SECRET = process.env.REFRESH_SECRET || "your_refresh_secret";
 
 
 // ******************[ signup logic ]*****************************
-
 export const signup = async (req: Request, res: Response) => {
   try {
     const user = await createUserSchema.validate(req.body, { abortEarly: false });
@@ -23,17 +22,38 @@ export const signup = async (req: Request, res: Response) => {
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       res.status(409).json({ message: "User already exists. Please log in instead." });
-      return
+      return;
     }
 
     const passwordHashed = await bcryptjs.hash(password, 12);
     const newUser = await User.create({ fullName, email, password: passwordHashed, role });
 
-    res.status(201).json({ message: "User created successfully", userId: newUser._id });
+
+    const accessToken = generateAccessToken(newUser);
+    const refreshToken = generateRefreshToken(newUser);
+
+   
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 أيام
+    });
+
+    
+    res.status(201).json({
+      message: "User created successfully",
+      accessToken,
+      user: {
+        id: newUser._id,
+        fullName: newUser.fullName,
+        email: newUser.email,
+        role: newUser.role,
+      },
+    });
   } catch (error: any) {
     if (error.name === 'ValidationError') {
       res.status(400).json({ message: "Validation failed", errors: error.errors });
-      return
+      return;
     }
     res.status(500).json({ message: "Error creating user" });
   }
@@ -128,7 +148,8 @@ export const refreshToken = async (req: Request, res: Response) => {
 
 
 
-// ******************[ FrogetPassword logic ]*****************************
+
+// ******************[ Forgot Password logic ]*****************************
 
 export const forgotPassword = async (req: Request, res: Response) => {
   try {
@@ -137,37 +158,36 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
     const user = await User.findOne({ email });
     if (!user) {
-      // لا تكشف ما إذا كان البريد الإلكتروني موجودًا أم لا
-      await new Promise(resolve => setTimeout(resolve, 500)); // منع Timing Attacks
+      // لا تكشف وجود المستخدم لتجنب Timing Attacks
+      await new Promise(resolve => setTimeout(resolve, 500));
       res.status(200).json({
-        message: "If this email exists, a reset code has been sent"
+        message: "If this email exists, a reset code has been sent",
       });
       return;
     }
 
-    // منع إساءة الاستخدام (Rate Limiting)
+    // منع التكرار قبل انتهاء الصلاحية
     if (user.resetPasswordExpireAt && user.resetPasswordExpireAt > new Date()) {
       const remainingTime = Math.ceil(
         (user.resetPasswordExpireAt.getTime() - Date.now()) / 60000
       );
       res.status(429).json({
-        message: `Please wait ${remainingTime} minutes before requesting a new code`
+        message: `Please wait ${remainingTime} minutes before requesting a new code`,
       });
+      return;
     }
 
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const expirationTime = new Date(Date.now() + 10 * 60000); // 10 دقائق
 
     user.resetCode = verificationCode;
-    user.resetPassword = verificationCode;
-    user.resetPasswordExpireAt = expirationTime;
+    user.resetPasswordExpireAt = new Date(Date.now() + 10 * 60 * 1000); // 10 دقائق
+
     await user.save();
 
     try {
       await sendVerificationEmail(email, verificationCode);
     } catch (emailError) {
       console.error('Failed to send verification email:', emailError);
-      // يمكنك التراجع عن حفظ الكود هنا إذا فشل إرسال البريد
     }
 
     res.status(200).json({
@@ -180,15 +200,18 @@ export const forgotPassword = async (req: Request, res: Response) => {
   }
 };
 
-// ******************[ sendVerificationEmail logic ]*****************************
+// ******************[ Send Verification Email logic ]*****************************
+
 const sendVerificationEmail = async (email: string, code: string) => {
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: process.env.EMAIL_USER, // Always use environment variables
-      pass: process.env.EMAIL_PASS,
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS, // مهم جدًا
     },
   });
+
+  
 
   const mailOptions = {
     from: `Your App <${process.env.EMAIL_USER}>`,
@@ -202,11 +225,11 @@ const sendVerificationEmail = async (email: string, code: string) => {
     await transporter.sendMail(mailOptions);
   } catch (error) {
     console.error('Email sending error:', error);
-    throw error; // Re-throw to handle in the calling function
+    throw error;
   }
 };
 
-// ******************[ verifyCode logic ]*****************************
+// ******************[ Verify Code logic ]*****************************
 
 export const verifyCode = async (req: Request, res: Response) => {
   const { email, code } = req.body;
@@ -214,16 +237,13 @@ export const verifyCode = async (req: Request, res: Response) => {
   const user = await User.findOne({ email });
   if (!user || user.resetCode !== code || user.resetPasswordExpireAt! < new Date()) {
     res.status(400).json({ message: "Invalid or expired code" });
-    return
+    return;
   }
 
   res.status(200).json({ message: "Code is valid" });
 };
 
-
-
-
-// ******************[ RestPassword logic ]*****************************
+// ******************[ Reset Password logic ]*****************************
 
 export const resetPassword = async (req: Request, res: Response) => {
   try {
@@ -231,24 +251,25 @@ export const resetPassword = async (req: Request, res: Response) => {
     const { email, code, password } = userRestPassword;
 
     const user = await User.findOne({ email });
-    if (!user || user.resetPassword !== code || user.resetPasswordExpireAt?.getTime() < Date.now()) {
+    if (!user || user.resetCode !== code || user.resetPasswordExpireAt?.getTime() < Date.now()) {
       res.status(400).json({ message: "Invalid or expired verification code" });
       return;
     }
 
-    // Hash the new password
     const hashedPassword = await bcryptjs.hash(password, 12);
-
-    // Update the user's password
     user.password = hashedPassword;
-    // Clear the reset after password is reset
-    user.resetPassword = undefined;
+
+    // Clear code and expiry
+    user.resetCode = undefined;
+    // user.resetPasswordExpireAt = undefined;
 
     await user.save();
 
     res.status(200).json({ message: "Password reset successfully" });
 
   } catch (error) {
+    console.error('Reset password error:', error);
     res.status(500).json({ message: "Error resetting password" });
   }
 };
+
