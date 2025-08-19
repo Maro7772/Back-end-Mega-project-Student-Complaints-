@@ -14,7 +14,7 @@ app.use(cors({ origin: "http://localhost:5173" , credentials: true}));
 app.use(express.json()); // Middleware to parse JSON request bodies
 app.use(cookieParser());
 
-app.use("/api/auth", router); // Use the auth routes
+app.use("/api/v1/auth", router); // Use the auth routes with API's versioning
 app.use("/", ComplaintsRouter); // Use the Complaints routes
 app.listen(port, () => {
   connectDB();
