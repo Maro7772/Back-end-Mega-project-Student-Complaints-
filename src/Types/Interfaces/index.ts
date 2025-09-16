@@ -12,6 +12,7 @@ export interface IUser extends Document {
   department?: string;
   createdAt: Date;
   updatedAt: Date;
+  // userID = string ;
 
   
   resetPassword?: String,
@@ -22,6 +23,7 @@ export interface IUser extends Document {
 }
 
 export interface IComplaint extends Document {
+  // userID = string ;
   student: mongoose.Types.ObjectId;
   name: string;
   category: Category;
@@ -35,6 +37,7 @@ export interface IComplaint extends Document {
 
 
 export interface INotification extends Document {
+  // userID = string ;
   user: mongoose.Types.ObjectId;
   message: string;
   sentAt: Date;

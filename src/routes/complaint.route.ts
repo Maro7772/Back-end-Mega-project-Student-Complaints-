@@ -4,9 +4,9 @@ import { createComplaint, getComplaints, deleteComplaint, updateComplaint } from
 
 const ComplaintsRouter = express.Router();
 
-ComplaintsRouter.get("/complaints", getComplaints); 
-ComplaintsRouter.post("/complaints", createComplaint);
-ComplaintsRouter.delete("/complaints/:id", deleteComplaint);
-ComplaintsRouter.put("/complaints/:id", updateComplaint);
+ComplaintsRouter.get("/", getComplaints); 
+ComplaintsRouter.post("/", createComplaint);
+ComplaintsRouter.delete("/:id", deleteComplaint);
+ComplaintsRouter.put("/:id", updateComplaint);
 
 export default ComplaintsRouter;
