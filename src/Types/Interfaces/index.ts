@@ -12,6 +12,7 @@ export interface IUser extends Document {
   department?: string;
   createdAt: Date;
   updatedAt: Date;
+  // userID = string ;
 
   resetPassword?: string;
   resetCode?: string;
