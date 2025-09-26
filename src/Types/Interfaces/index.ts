@@ -1,44 +1,40 @@
+import { Document, Types } from "mongoose";
+import { Role, Category, Status } from "../ENUM";
 
-import mongoose, { Document } from 'mongoose';
-import { Role, Category, Status } from '../ENUM';
 
-export interface IUser extends Document {
+interface Timestamps {
+  createdAt: Date;
+  updatedAt: Date;
+}
+export interface IUser extends Document , Timestamps {
+  // userID = string ;
   fullName: string;
   email: string;
   phoneNumber: string;
   password: string;
   role: Role;
-  enrollmentYear?: number;
-  department?: string;
-  createdAt: Date;
-  updatedAt: Date;
-  // userID = string ;
 
-  
-  resetPassword?: String,
-   resetCode?: String,
-  resetPasswordExpireAt:Date,
-  verificationToken?:String,
-  verificationTokenExpireAt?:Date,
+  resetPassword?: string;
+  resetCode?: string;
+  resetPasswordExpireAt?: Date;
+  verificationToken?: string;
+  verificationTokenExpireAt?: Date;
 }
 
-export interface IComplaint extends Document {
+export interface IComplaint extends Document , Timestamps {
   // userID = string ;
-  student: mongoose.Types.ObjectId;
+  student: Types.ObjectId;
   name: string;
   category: Category;
   description: string;
   status: Status;
-  submissionDate: Date;
+  submissionDate?: Date;
   resolutionDate?: Date;
-  createdAt: Date;
-  updatedAt: Date;
 }
-
 
 export interface INotification extends Document {
   // userID = string ;
-  user: mongoose.Types.ObjectId;
+  user: Types.ObjectId;
   message: string;
-  sentAt: Date;
+  sentAt?: Date;
 }

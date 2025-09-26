@@ -16,6 +16,7 @@ export const authMiddleware = async (
     }
 
     const tokenstring = token.split(" ")[1];
+    
     try {
         const decoded = jwt.verify(tokenstring, process.env.JWT_SECRET as string) as { id: string };
         // get id --> user --> attach user to the request 
@@ -26,7 +27,7 @@ export const authMiddleware = async (
             res.status(401).send({ message: "Unauthorized" })
             return;
         }
-        // req.user = foundUser;
+        req.user = foundUser;
         next();
     } catch (error) {
         res.status(403).json({ message: "Invalid token" });

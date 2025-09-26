@@ -9,8 +9,6 @@ const UserSchema = new Schema<IUser>(
     phoneNumber: String,
     password: { type: String, required:true },
     role: { type: String, enum: Object.values(Role) },
-    enrollmentYear: Number,
-    department: String,
 
     resetPassword: String,
     resetCode: String,
