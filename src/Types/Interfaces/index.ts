@@ -1,6 +1,6 @@
-
-import mongoose, { Document } from 'mongoose';
-import { Role, Category, Status } from '../ENUM';
+import { Request } from "express";
+import { Document } from "mongoose";
+import { Role, Category, Status } from "../ENUM";
 
 export interface IUser extends Document {
   fullName: string;
@@ -14,31 +14,26 @@ export interface IUser extends Document {
   updatedAt: Date;
   // userID = string ;
 
-  
-  resetPassword?: String,
-   resetCode?: String,
-  resetPasswordExpireAt:Date,
-  verificationToken?:String,
-  verificationTokenExpireAt?:Date,
+  resetPassword?: string;
+  resetCode?: string;
+  resetPasswordExpireAt: Date;
+  verificationToken?: string;
+  verificationTokenExpireAt?: Date;
 }
 
 export interface IComplaint extends Document {
-  // userID = string ;
-  student: mongoose.Types.ObjectId;
-  name: string;
+  studentID: string;
+  title: string;
   category: Category;
   description: string;
   status: Status;
-  submissionDate: Date;
-  resolutionDate?: Date;
+  solution: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
-
 export interface INotification extends Document {
-  // userID = string ;
-  user: mongoose.Types.ObjectId;
+  userID: string;
   message: string;
   sentAt: Date;
 }
