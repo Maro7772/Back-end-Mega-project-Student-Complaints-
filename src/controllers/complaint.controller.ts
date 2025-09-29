@@ -1,106 +1,150 @@
-import type { Request, Response } from "express";
+import type { Request, Response, NextFunction } from "express";
 import Complaint from "../models/complaint.model";
-import { User } from "../models/user.model";
 import * as Yup from "yup";
 
+// ================== Schemas ==================
 const createComplaintSchema = Yup.object({
-  name: Yup.string().required("Student Name is required"),
+  title: Yup.string().required("Complaint Name is required"),
   category: Yup.string()
     .required("Category is required")
-    .oneOf(
-      ["Academic", "Non-Academic"],
-      "Category must be either 'Academic' or 'Non-Academic'"
-    ),
-  description: Yup.string().required("Description is required")
+    .oneOf(["Academic", "Non-Academic"], "Invalid category"),
+  description: Yup.string().required("Description is required"),
 });
 
-export const createComplaint = async (req: Request, res: Response) => {
-  try {
-    console.log(req.body);
+// ================== Helpers ==================
+const asyncHandler =
+  (fn: Function) => (req: Request, res: Response, next: NextFunction) =>
+    Promise.resolve(fn(req, res, next)).catch(next);
+
+const sendResponse = (
+  res: Response,
+  status: number,
+  success: boolean,
+  message: string,
+  data: any = null
+) => {
+  res.status(status).json({ success, message, data });
+};
+
+// ================== Controllers ==================
+
+// Create Complaint
+export const createComplaint = asyncHandler(
+  async (req: Request, res: Response) => {
     const complaintBody = await createComplaintSchema.validate(req.body, {
-      abortEarly: false
+      abortEarly: false,
     });
-    const { name, category, description } = complaintBody;
-
-    const student = await User.findOne({ fullName: name });
-    if (!name || !category || !description) {
-      res.status(400).json({ message: "All fields are required" });
-      return;
-    }
-    if (!student) {
-      res.status(404).json({ message: "Student not found" });
-      return;
-    }
-
-    if (!["Academic", "Non-Academic"].includes(category)) {
-      res.status(400).json({ message: "Invalid category value." });
-      return;
-    }
 
     const complaint = await Complaint.create({
-      student: student._id,
-      name: student.fullName,
-      category,
-      description,
-      submissionDate: new Date()
+      studentID: req.user._id,
+      ...complaintBody,
+      solution: "",
+      status: "Pending",
     });
 
-    res.status(201).json(complaint);
-  } catch (err) {
-    if (err instanceof Yup.ValidationError) {
-      res.status(400).json({
-        message: "Validation Failed",
-        errors: err.errors
-      });
-    } else {
-      res.status(500).json({ message: "Internal server error" });
-    }
+    sendResponse(res, 201, true, "Complaint created successfully", complaint);
   }
-};
+);
 
-export const getComplaints = async (req: Request, res: Response) => {
-  try {
-    const complaints = await Complaint.find().populate("student").exec();
-    res.status(200).json(complaints);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Internal server error" });
+// Get All Complaints
+export const getComplaints = asyncHandler(
+  async (_req: Request, res: Response) => {
+    const complaints = await Complaint.find().sort({ createdAt: -1 });
+    sendResponse(res, 200, true, "Complaints fetched", complaints);
   }
-};
+);
 
-export const deleteComplaint = async (req: Request, res: Response) => {
-  try {
-    const complaintId = req.params.id;
-    const deletedComplaint = await Complaint.findByIdAndDelete(complaintId);
+// Get My Complaints
+export const myComplaints = asyncHandler(
+  async (req: Request, res: Response) => {
+    const complaints = await Complaint.find({ studentID: req.user._id }).sort({
+      createdAt: -1,
+    });
+    sendResponse(res, 200, true, "My complaints fetched", complaints);
+  }
+);
+
+// Delete Complaint
+export const deleteComplaint = asyncHandler(
+  async (req: Request, res: Response) => {
+    const deletedComplaint = await Complaint.findByIdAndDelete(req.params.id);
     if (!deletedComplaint) {
-      res.status(404).json({ message: "Complaint not found" });
-      return;
+      return sendResponse(res, 404, false, "Complaint not found");
     }
-    res.status(200).json({ message: "Complaint deleted successfully" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Internal server error" });
+    sendResponse(res, 200, true, "Complaint deleted successfully");
   }
-};
+);
 
-export const updateComplaint = async (req: Request, res: Response) => {
-  try {
-    const complaintId = req.params.id;
-    const { category, description, status, name } = req.body;
+// Update Complaint
+export const updateComplaint = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { category, description, title, solution, status } = req.body;
+    const complaint = await Complaint.findById(req.params.id);
+
+    if (!complaint) {
+      return sendResponse(res, 404, false, "Complaint not found");
+    }
+
+    const updateData: any = {};
+
+    if (req.user?.role === "student") {
+      if (complaint.studentID.toString() !== req.user._id.toString()) {
+        return sendResponse(
+          res,
+          403,
+          false,
+          "Forbidden: You can only edit your complaints"
+        );
+      }
+      if (solution || status) {
+        return sendResponse(
+          res,
+          403,
+          false,
+          "Students cannot update solution or status"
+        );
+      }
+
+      if (title) updateData.title = title;
+      if (description) updateData.description = description;
+      if (category) updateData.category = category;
+    }
+
+    if (req.user?.role === "admin") {
+      if (solution) {
+        updateData.solution = solution;
+        updateData.status = status || "Resolved";
+      }
+      if (status) updateData.status = status;
+    }
 
     const updatedComplaint = await Complaint.findByIdAndUpdate(
-      complaintId,
-      { category, description, status, name },
+      req.params.id,
+      updateData,
       { new: true }
     );
 
-    if (!updatedComplaint) {
-      res.status(404).json({ message: "Complaint not found" });
-      return;
-    }
-    res.status(200).json(updatedComplaint);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Internal server error" });
+    sendResponse(
+      res,
+      200,
+      true,
+      "Complaint updated successfully",
+      updatedComplaint
+    );
   }
-};
+);
+
+// Search Complaints
+export const searchComplaints = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { category, status, title } = req.query;
+    const filter: any = {};
+
+    if (category) filter.category = category;
+    if (status) filter.status = status;
+    if (title) filter.title = { $regex: title, $options: "i" }; // case-insensitive search
+
+    const complaints = await Complaint.find(filter).sort({ createdAt: -1 });
+    sendResponse(res, 200, true, "Complaints search results", complaints);
+  }
+);

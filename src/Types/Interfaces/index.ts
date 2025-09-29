@@ -1,4 +1,4 @@
-import { Document, Types } from "mongoose";
+import { Document } from "mongoose";
 import { Role, Category, Status } from "../ENUM";
 
 
@@ -21,20 +21,19 @@ export interface IUser extends Document , Timestamps {
   verificationTokenExpireAt?: Date;
 }
 
-export interface IComplaint extends Document , Timestamps {
-  // userID = string ;
-  student: Types.ObjectId;
-  name: string;
+export interface IComplaint extends Document {
+  studentID: string;
+  title: string;
   category: Category;
   description: string;
   status: Status;
-  submissionDate?: Date;
-  resolutionDate?: Date;
+  solution: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface INotification extends Document {
-  // userID = string ;
-  user: Types.ObjectId;
+  userID: string;
   message: string;
   sentAt?: Date;
 }

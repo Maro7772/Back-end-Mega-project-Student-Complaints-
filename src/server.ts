@@ -5,7 +5,7 @@ import cors from "cors"; // Import CORS middleware
 import env from "./util/validateEnv";
 import { connectDB } from "./config/db";
 import router from "./routes/auth.route";
-import ComplaintsRouter from "./routes/complaint.route";
+import complaintsRouter from "./routes/complaint.route";
 import { errorHandler } from "./middlwares/errorHandler";
 import { AppError } from "./util/AppError";
 
@@ -17,7 +17,7 @@ app.use(express.json()); // Middleware to parse JSON request bodies
 app.use(cookieParser());
 
 app.use("/api/auth", router); // Use the auth routes with API's versioning
-app.use("/complaints", ComplaintsRouter); // Use the Complaints routes with API's versioning
+app.use("/api/v1", complaintsRouter); // Use the Complaints routes with API's versioning
 // app.use("/api/settings", settingsRouter); // Use the settings routes
 
 app.all("/", (req, res, next) => {
