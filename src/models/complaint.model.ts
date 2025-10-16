@@ -4,7 +4,7 @@ import { Category, Status } from "../Types/ENUM";
 
 const ComplaintSchema = new Schema<IComplaint>(
   {
-    studentID: { type: String, ref: "User", required: true },
+    studentID: { type: Schema.Types.ObjectId, ref: "User", required: true },
     title: { type: String, required: true },
     category: { type: String, enum: Object.values(Category), required: true },
     description: { type: String, required: true },

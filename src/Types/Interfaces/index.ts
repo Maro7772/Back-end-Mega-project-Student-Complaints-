@@ -1,12 +1,11 @@
 import { Document } from "mongoose";
 import { Role, Category, Status } from "../ENUM";
 
-
 interface Timestamps {
   createdAt: Date;
   updatedAt: Date;
 }
-export interface IUser extends Document , Timestamps {
+export interface IUser extends Document, Timestamps {
   // userID = string ;
   fullName: string;
   email: string;
@@ -22,7 +21,7 @@ export interface IUser extends Document , Timestamps {
 }
 
 export interface IComplaint extends Document {
-  studentID: string;
+  studentID: object;
   title: string;
   category: Category;
   description: string;

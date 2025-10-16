@@ -8,13 +8,15 @@ export const authMiddleware = async (
   next: NextFunction
 ) => {
   // request --> headers --> auth token
-  const token = req.headers.authorization;
+  const token = req.cookies?.accessToken;
   if (!token) {
     res.status(401).json({ message: "Access denied" });
     return;
   }
 
-  const tokenstring = token.split(" ")[1];
+  // Marwan: decode token without splitting
+  const tokenstring = token;
+
   try {
     const decoded = jwt.verify(
       tokenstring,
@@ -22,17 +24,14 @@ export const authMiddleware = async (
     ) as { id: string };
     // get id --> user --> attach user to the request
     const userId = decoded.id;
-    console.log("Passed through auth middlware");
     const foundUser = await User.findById(userId).exec();
     if (!foundUser) {
       res.status(401).send({ message: "Unauthorized" });
       return;
     }
-        req.user = foundUser;
-        next();
-    } catch (error) {
-        res.status(403).json({ message: "Invalid token" });
-
-    }
-
-} 
+    req.user = foundUser;
+    next();
+  } catch (error) {
+    res.status(403).json({ message: "Invalid token" });
+  }
+};
