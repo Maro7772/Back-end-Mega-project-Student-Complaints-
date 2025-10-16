@@ -6,7 +6,7 @@ interface Timestamps {
   updatedAt: Date;
 }
 export interface IUser extends Document, Timestamps {
-  // userID = string ;
+  _id: string;
   fullName: string;
   email: string;
   phoneNumber: string;
