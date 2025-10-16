@@ -4,7 +4,6 @@ import {
   getComplaints,
   deleteComplaint,
   updateComplaint,
-  myComplaints,
   searchComplaints,
 } from "../controllers/complaint.controller";
 import { authMiddleware } from "../middlwares/auth.middlware";
@@ -18,17 +17,15 @@ const complaintRouter = express.Router();
 complaintRouter.post("/complaints", authMiddleware, createComplaint);
 complaintRouter.patch("/complaints/:id", authMiddleware, updateComplaint);
 complaintRouter.delete("/complaints/:id", authMiddleware, deleteComplaint);
-complaintRouter.get("/complaints", authMiddleware, myComplaints);
 
+/* ============================
+    Student Endpoints && Admin Endpoints
+   ============================ */
+complaintRouter.get("/complaints", authMiddleware, getComplaints);
 /* ============================
     Admin Endpoints
    ============================ */
-complaintRouter.get(
-  "/complaints",
-  authMiddleware,
-  adminGuardMiddleware,
-  getComplaints
-);
+
 complaintRouter.get(
   "/complaints/search",
   authMiddleware,

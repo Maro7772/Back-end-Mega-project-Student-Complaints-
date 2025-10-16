@@ -31,6 +31,14 @@ const sendResponse = (
 // Create Complaint
 export const createComplaint = asyncHandler(
   async (req: Request, res: Response) => {
+    if (req.user?.role === "admin") {
+      return sendResponse(
+        res,
+        403,
+        false,
+        "Forbidden: Only students can create complaints"
+      );
+    }
     const complaintBody = await createComplaintSchema.validate(req.body, {
       abortEarly: false,
     });
@@ -46,21 +54,37 @@ export const createComplaint = asyncHandler(
   }
 );
 
-// Get All Complaints
+// Get Complaints (Admin → all / Student → own)
 export const getComplaints = asyncHandler(
-  async (_req: Request, res: Response) => {
-    const complaints = await Complaint.find().sort({ createdAt: -1 });
-    sendResponse(res, 200, true, "Complaints fetched", complaints);
-  }
-);
-
-// Get My Complaints
-export const myComplaints = asyncHandler(
   async (req: Request, res: Response) => {
-    const complaints = await Complaint.find({ studentID: req.user._id }).sort({
-      createdAt: -1,
-    });
-    sendResponse(res, 200, true, "My complaints fetched", complaints);
+    let complaints;
+
+    if (req.user?.role === "admin") {
+      complaints = await Complaint.find().sort({ createdAt: -1 });
+    } else {
+      complaints = await Complaint.find({ studentID: req.user._id }).sort({
+        createdAt: -1,
+      });
+    }
+
+    const formattedComplaints = complaints.map((c: any) => ({
+      _id: c._id.toString(),
+      title: c.title,
+      category: c.category,
+      description: c.description,
+      studentID: c.studentID ? c.studentID.toString() : "",
+      status: c.status,
+      solution: c.solution || "",
+      createdAt: c.createdAt,
+    }));
+
+    sendResponse(
+      res,
+      200,
+      true,
+      "Complaints fetched successfully",
+      formattedComplaints
+    );
   }
 );
 

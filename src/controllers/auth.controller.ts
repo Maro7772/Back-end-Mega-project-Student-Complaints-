@@ -44,7 +44,14 @@ export const signup = catchAsync(
     const refreshToken = generateRefreshToken(newUser);
 
     res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 أيام
+    });
+
+    // Marwan added this to test the cookie
+    res.cookie("accessToken", accessToken, {
+      secure: false,
       sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 أيام
     });
@@ -90,8 +97,14 @@ export const login = catchAsync(
 
     // Save refresh token in HttpOnly cookie
     res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      sameSite: "strict",
+      secure: false,
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    res.cookie("accessToken", accessToken, {
+      secure: false,
+      sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
@@ -139,7 +152,7 @@ export const refreshToken = catchAsync(async (req: Request, res: Response) => {
 
   res.cookie("refreshToken", newRefreshToken, {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "none",
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 
